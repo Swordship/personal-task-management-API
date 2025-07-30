@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Optional
 from dotenv import load_dotenv
 import os
-
+from datetime import datetime
 from app.database import connect_to_monogoDB,disconnect_to_monogoDB,__init__database
 from app.models.task import Task
 load_dotenv()
@@ -117,15 +117,21 @@ async def create_task(task_data: TaskCreater):
     return new_task
 
 @app.put("/update_task/{task_id}")
-def update_task(task_id:int,task_data:TaskCreater):
+async def update_task(task_id:str,task_data:TaskCreater):
 
-    for task in fake_data:
-        if task["id"] == task_id:
-            task["task"] = task_data.task
-            task["description"] = task_data.description
-            return task
-        
-    raise HTTPException(status_code=404 , detail= f"the task{task_id} is not found !")
+    task = await Task.get(task_id)
+    
+    if not task :
+        raise HTTPException(status_code=404 , detail= f"the task{task_id} is not found !")
+    
+    task.task = task_data.task
+    task.description=task_data.description
+    task.updated_at = datetime.utcnow()
+
+    await task.save()
+
+    return task
+
 @app.delete("/remove_task/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_task(task_id:int):
     found = False
