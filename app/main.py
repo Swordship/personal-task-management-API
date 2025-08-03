@@ -133,17 +133,25 @@ async def update_task(task_id:str,task_data:TaskCreater):
     return task
 
 @app.delete("/remove_task/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_task(task_id:int):
-    found = False
-    for task in fake_data:
-        if task["id"] == task_id:
-            fake_data.remove(task)
-            found = True
-            break
-    if found == False:
-        raise HTTPException(status_code=404,detail=f"the task{task_id} is not found")
-    
-    return None
+async def delete_task(task_id:str):
+
+
+    try:
+        clean_task_id = task_id.strip('"')
+        task = await Task.get(clean_task_id)
+
+        if not task:
+            raise HTTPException(status_code=404, detail=f"that task id{clean_task_id} is not found")
+        
+        await task.delete()
+
+        return None
+    except HTTPException:
+        raise HTTPException(status_code=404, detail=f"that task id {clean_task_id} is not found")
+    except Exception as e:
+        print(f"error is {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
 @app.patch("/task/{task_id}/completed/",status_code=status.HTTP_200_OK)
 def mark_task_completed(task_id:int):
     for task in fake_data:
