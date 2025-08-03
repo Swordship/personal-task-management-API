@@ -153,12 +153,29 @@ async def delete_task(task_id:str):
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @app.patch("/task/{task_id}/completed/",status_code=status.HTTP_200_OK)
-def mark_task_completed(task_id:int):
-    for task in fake_data:
-        if task["id"] == task_id:
-            task["completed"] = True
-            return {"message":f"the completed status for task {task_id} is updated"}
-    raise HTTPException(status_code=404,detail=f"the task{task_id} is not found")
+async def mark_task_completed(task_id:str):
+    try:
+        clean_task_id = task_id.strip('"')
+        task = await Task.get(clean_task_id)
+
+        if not task:
+            raise HTTPException(status_code=404 , detail=f"that task id {clean_task_id} is not fount")
+
+        task.completed=True
+        task.updated_at = datetime.utcnow() 
+        await task.save()
+
+        return {
+            "message": f"Task '{task.task}' marked as completed", 
+            "task": task
+        }
+    
+    except HTTPException:
+        raise HTTPException(status_code=404,detail=f"that task id {task_id} is not found")
+    
+    except Exception as e:
+        print(f"Error in mark_task_incompleted: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     
 @app.patch("/task/{task_id}/incompleted/",status_code=status.HTTP_200_OK)
 def mark_task_incompleted(task_id : int):
