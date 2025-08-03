@@ -171,19 +171,36 @@ async def mark_task_completed(task_id:str):
         }
     
     except HTTPException:
-        raise HTTPException(status_code=404,detail=f"that task id {task_id} is not found")
+        raise HTTPException(status_code=404,detail=f"that task id {clean_task_id} is not found")
     
     except Exception as e:
-        print(f"Error in mark_task_incompleted: {e}")
+        print(f"Error in mark_task_completed: {e}")
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     
 @app.patch("/task/{task_id}/incompleted/",status_code=status.HTTP_200_OK)
-def mark_task_incompleted(task_id : int):
-    for task in fake_data:
-        if task["id"] == task_id:
-            task["completed"] = False
-            return {"message":f"the completed status for the task {task_id} is updated"}
-    raise HTTPException(status_code=404,detail=f"the task{task_id} is not found")
+async def mark_task_incompleted(task_id : str):
+    try:
+        clean_task_id = task_id.strip('"')
+        task = await Task.get(clean_task_id)
+
+        if not task:
+            raise HTTPException(status_code=404 , detail=f"that task id {clean_task_id} is not found")
+        
+        task.completed = False
+        task.updated_at=datetime.utcnow()
+
+        await task.save()
+
+        return{
+            "message":f"Task {task.task} marked as incompleted",
+            "task":task
+        }
+    
+    except HTTPException:
+        raise HTTPException(status_code=404 , detail=f"that task id {clean_task_id} is not found")
+    except Exception as e:
+        print(f"Error in mark_task_incompleted: {e}")
+        raise Exception(status_code=500, detail=f"Database error: {str(e)}")
 
 @app.get("/task/stats",status_code=status.HTTP_200_OK)
 def get_statstic():
