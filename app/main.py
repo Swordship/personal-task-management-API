@@ -19,13 +19,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-fake_data = [  
-        {"id": 1, "task": "pick all clothes", "completed": False},
-        {"id": 2, "task": "finish your homework ?", "completed": False},
-        {"id": 3, "task": "20 push ups", "completed": True}
-    ]
-
-
 
 @app.on_event("startup")
 async def startup_event():
