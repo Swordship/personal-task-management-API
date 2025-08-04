@@ -200,21 +200,37 @@ async def mark_task_incompleted(task_id : str):
         raise HTTPException(status_code=404 , detail=f"that task id {clean_task_id} is not found")
     except Exception as e:
         print(f"Error in mark_task_incompleted: {e}")
-        raise Exception(status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @app.get("/task/stats",status_code=status.HTTP_200_OK)
-def get_statstic():
+async def get_statstic():
 
-    total_tasks = len([task for task in fake_data ])
-    completed = len([task for task in fake_data if task["completed"] == True])
-    incompleted = len([task for task in fake_data if task["completed"] == False])
-    completion_percentage = (completed / total_tasks)*100
+    try:
+        Total_tasks = await Task.count()
+
+        completed = await Task.find({"completed": True}).count()
+
+        incompleted = Total_tasks - completed
+
+        if(completed>0):
+            completion_percentage = ((completed / Total_tasks )* 100)
+        else:
+            completion_percentage = 0.0
 
 
-    return{
-        "total task":total_tasks,
+        return{
+        "total task":Total_tasks,
         "total task completed":completed,
         "total task not yet completed":incompleted,
-        "percentage of completed task":completion_percentage,
-        "summary": f'you completed {completed} out of {total_tasks} tasks!'
+        "percentage of completed task":round(completion_percentage,2),
+        "summary": f'you completed {completed} out of {Total_tasks} tasks!'
     }
+
+
+    except Exception as e:
+        print(f"the error in the get_statstic is {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
+
+    
